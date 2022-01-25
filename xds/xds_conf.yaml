@@ -1,0 +1,21 @@
+Platform: "linux"
+
+# replace the place holder with your host ip, get your IPAddress in powershell:
+#   PS> (Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias Ethernet).IPAddress
+MeshEndpoints: {"127.0.0.1": 10001}
+HealthCheckEndpoints: {"127.0.0.1": 8911}
+Model: 
+  Hosts: {"model": 5001}
+  MaxConnections: 1
+  MaxPendingRequests: 1
+  # MaxRequests: 1024
+  IsHealthy: true
+
+# you can get a server certificate file from key vault 'infer-dep-usw2dev' for test
+#   https://ms.portal.azure.com/#@microsoft.onmicrosoft.com/asset/Microsoft_Azure_KeyVault/Certificate/https://infer-dep-usw2dev.vault.azure.net/certificates/cert-mirtest-v2-test-endpt-20201117173353-1ef841f5-52d7-4b45-bb1f-c080c67d6fe5
+ServerCertFile: /conf/server_cert.pem
+
+# you can get a client certificate file from key vault if you're testing mTLS
+#   https://ms.portal.azure.com/#@microsoft.onmicrosoft.com/asset/Microsoft_Azure_KeyVault/Certificate/https://infer-dep-usw2dev.vault.azure.net/certificates/fd-stg-usw2-certificate
+#SanFD: "westus2-fd.inference.ml.azure.com"
+#SanDiag: "westus2-stg.inference.ml.azure.com"

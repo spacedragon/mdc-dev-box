@@ -1,0 +1,52 @@
+version: "3.7"
+
+services:
+  xds:
+    image: vmagentacr.azurecr.io/mdc/xds:latest 
+    command: /xds /conf/xds_conf.yaml
+    expose:
+      - "12345"
+    volumes:
+      - ./xds:/conf
+  envoy:
+    image: envoyproxy/envoy:v1.16.1
+    command: bash /app/start.sh 2
+    links:
+      - xds
+    ports:
+      - 10001:10001
+      - 9902:9902
+    environment:
+    - MIR_MESH_DISABLE=false 
+    - MIR_ENVOY_RETRY_ATTEMPTS=10 
+    - MIR_SCORING_PROXY_MAX_CONNECTION_DURATION=240 
+    - ENABLE_TRITON_MULTI_MODEL=false 
+    - ENVOY_MESH_LOAD_BALANCE_ALGO=ROUND_ROBIN 
+    - HOST_IP=xds 
+    - MIR_MODEL_USE_HTTP2=false 
+    - MIR_ENVOY_HIGH_QPS_OPTIMIZED=false 
+    - MIR_ENABLE_MESH_HTTP2=false 
+    - MODEL_REQUEST_TIMEOUT=600 
+    - ENABLE_MDC=true 
+    - MIR_MTLS_DISABLE=false 
+    - MIR_ENVOY_LOG_LEVEL=info 
+    - MIR_SCORING_PROXY_IDLE_TIMEOUT=60
+    volumes:
+      - ./envoy:/app
+  mdc:
+    image: vmagentacr.azurecr.io/public/mir/mir-mdc:55585752.1643013235733
+    entrypoint: ./app/mdc-server
+    command: -config /conf/config.json -http :50011
+    volumes:
+      - ./mdc:/conf
+    environment:
+      - eventhubConnStr=${eventhubConnStr}
+      - blobKey=${blobKey}
+      - blobName=${blobName}
+  model:
+    image: mendhak/http-https-echo:23
+    environment:
+        - HTTP_PORT=5001
+    ports:
+        - "5001:5001"
+    
