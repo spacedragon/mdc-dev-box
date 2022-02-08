@@ -7,14 +7,5 @@
   "maxPayloadSize": 1.0,
   "eventHubSink": {
     "connectionString": "${eventhubConnStr}"
-  },
-
-  "blobSink": {
-    "binaryToBlob": true,
-    "oversizeToBlob": 1048576,
-    "name": "${blobName}",
-    "container": "azureml",
-    "blobKey": "${blobKey}",
-    "path": "/mdc/[endpoint]/[deployment]/[year][month][day]"
   }
 }
