@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
-	"log"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/shirou/gopsutil/docker"
+	log "github.com/sirupsen/logrus"
 )
 
 type requestData struct {
@@ -23,11 +27,17 @@ type requestData struct {
 
 func main() {
 
+	// Log as JSON instead of the default ASCII formatter.
+	log.SetFormatter(&log.JSONFormatter{})
+
+	// Output to stdout instead of the default stderr
+	// Can be any io.Writer, see below for File example
+	log.SetOutput(os.Stdout)
+
 	csvFile, err := os.Open("export.csv")
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println("Successfully Opened CSV file")
 	defer csvFile.Close()
 
 	reader := csv.NewReader(csvFile)
@@ -42,7 +52,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("begin %v", begin)
+	findContainers()
+	sampleContainerCpu()
+
+	log.Debug("begin %v", begin)
 	now := time.Now()
 	for _, line := range csvLines {
 		ts, _ := time.Parse(layout, trimQuotes(line[0]))
@@ -57,19 +70,50 @@ func main() {
 			Recv:      r,
 			Sent:      s,
 		}
-		log.Printf("now %v", ts)
 
 		delay := ts.Sub(begin)
 		elapsed := time.Since(now)
 
 		if elapsed < delay {
 			wait := delay - elapsed
-			log.Printf("wait for %v", wait)
 			time.Sleep(wait)
 		}
 
 		go send(&req)
 	}
+}
+
+var mdc string
+var mdcCpu float64
+var envoy string
+var envoyCpu float64
+var model string
+var modelCpu float64
+
+func findContainers() {
+	dockerlist, err := docker.GetDockerStat()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, c := range dockerlist {
+		if strings.Contains(c.Name, "mdc_1") {
+			mdc = c.ContainerID
+		}
+		if strings.Contains(c.Name, "envoy_1") {
+			envoy = c.ContainerID
+		}
+		if strings.Contains(c.Name, "model_1") {
+			model = c.ContainerID
+		}
+	}
+}
+
+func sampleContainerCpu() {
+	if len(mdc) > 0 {
+		mdcCpu, _ = docker.CgroupCPUUsageDocker(mdc)
+	}
+	envoyCpu, _ = docker.CgroupCPUUsageDocker(envoy)
+	modelCpu, _ = docker.CgroupCPUUsageDocker(model)
 }
 
 func trimQuotes(s string) string {
@@ -84,8 +128,12 @@ func trimQuotes(s string) string {
 }
 
 func send(req *requestData) {
-	url := fmt.Sprintf("http://localhost:8080/?time=%d&size=%d", req.Time, req.Sent)
-	log.Println(url)
+	u, _ := url.Parse("http://localhost:10001/")
+	q := u.Query()
+	q.Set("time", strconv.Itoa(req.Time))
+	q.Set("size", strconv.Itoa(req.Sent))
+	u.RawQuery = q.Encode()
+
 	var b []byte
 	if req.Recv > 2 {
 		b = make([]byte, req.Recv, req.Recv)
@@ -97,10 +145,25 @@ func send(req *requestData) {
 	} else {
 		b = []byte{}
 	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(b))
+	begin := time.Now()
+	resp, err := http.Post(u.String(), "application/json", bytes.NewBuffer(b))
 	if err != nil {
 		panic(err)
 	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	elapsed := time.Since(begin).Milliseconds()
+	sampleContainerCpu()
+	log.WithFields(log.Fields{
+		"method":         "Post",
+		"statusCode":     resp.StatusCode,
+		"url":            u.String(),
+		"duration":       elapsed,
+		"serverDuration": req.Time,
+		"sent":           len(b),
+		"recv":           len(body),
+		"mdcCpu":         mdcCpu,
+		"envoyCpu":       envoyCpu,
+		"modelCpu":       modelCpu,
+	}).Info("Sent request ", req.RequestId)
 	defer resp.Body.Close()
 }

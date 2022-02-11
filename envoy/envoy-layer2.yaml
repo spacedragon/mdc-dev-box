@@ -77,7 +77,7 @@ static_resources:
                 function envoy_on_request(request_handle)
                   backupAttemptCountHeader(request_handle)
                   -- backupRequestHeaders(request_handle)
-                  mdcSendAsync(request_handle, true)
+                  -- mdcSendAsync(request_handle, true)
                 end
 
                 function envoy_on_response(response_handle)
@@ -85,7 +85,7 @@ static_resources:
                   if not (isUpstreamOverflow(response_handle) or isUpstreamModelNotReady(response_handle)) then
                     rewriteStatusNon200(response_handle)
                     appendEnvoyModelTime(response_handle)
-                    mdcSendAsync(response_handle, false)
+                    -- mdcSendAsync(response_handle, false)
                   end
                 end
           - name: envoy.filters.http.router
@@ -96,7 +96,7 @@ static_resources:
               runtime_filter:
                 runtime_key: http_access_log_sample
                 percent_sampled:
-                  numerator: 100
+                  numerator: 0
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
               path: /dev/stdout

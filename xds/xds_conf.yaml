@@ -6,9 +6,9 @@ MeshEndpoints: {"127.0.0.1": 10001}
 HealthCheckEndpoints: {"127.0.0.1": 8911}
 Model: 
   Hosts: {"model": 5001}
-  MaxConnections: 1
-  MaxPendingRequests: 1
-  # MaxRequests: 1024
+  MaxConnections: 200000
+  MaxPendingRequests: 1000
+  MaxRequests: 10240
   IsHealthy: true
 
 # you can get a server certificate file from key vault 'infer-dep-usw2dev' for test

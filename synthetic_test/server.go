@@ -9,10 +9,9 @@ import (
 )
 
 func main() {
-
 	http.HandleFunc("/", handler)
-	fmt.Println("Server started at port 8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	fmt.Println("Server started at port 5001")
+	log.Fatal(http.ListenAndServe(":5001", nil))
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -27,6 +26,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("content-type", "application/json")
 	w.WriteHeader(200)
 	if ok {
+		log.Printf("%s", size[0])
 		s, _ := strconv.Atoi(size[0])
 		if s >= 2 {
 			b := make([]byte, s, s)

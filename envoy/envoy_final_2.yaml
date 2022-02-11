@@ -11,7 +11,7 @@ layered_runtime:
   layers:
   - name: "static_runtime"
     static_layer:
-      http_access_log_sample: 100
+      http_access_log_sample: 0
   - name: "admin_runtime"
     admin_layer: {}
 
@@ -96,7 +96,7 @@ static_resources:
               runtime_filter:
                 runtime_key: http_access_log_sample
                 percent_sampled:
-                  numerator: 100
+                  numerator: 0
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
               path: /dev/stdout

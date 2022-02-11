@@ -24,12 +24,12 @@ services:
     - ENVOY_MESH_LOAD_BALANCE_ALGO=ROUND_ROBIN 
     - HOST_IP=xds 
     - MIR_MODEL_USE_HTTP2=false 
-    - MIR_ENVOY_HIGH_QPS_OPTIMIZED=false 
+    - MIR_ENVOY_HIGH_QPS_OPTIMIZED=true 
     - MIR_ENABLE_MESH_HTTP2=false 
     - MODEL_REQUEST_TIMEOUT=600 
     - ENABLE_MDC=true 
     - MIR_MTLS_DISABLE=false 
-    - MIR_ENVOY_LOG_LEVEL=info 
+    - MIR_ENVOY_LOG_LEVEL=warn 
     - MIR_SCORING_PROXY_IDLE_TIMEOUT=60
     volumes:
       - ./envoy:/app
@@ -44,7 +44,7 @@ services:
       - blobKey=${blobKey}
       - blobName=${blobName}
   model:
-    image: mendhak/http-https-echo:23
+    image: syntest:latest
     environment:
         - HTTP_PORT=5001
     ports:
