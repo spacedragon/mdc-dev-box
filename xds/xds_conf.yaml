@@ -5,7 +5,7 @@ Platform: "linux"
 MeshEndpoints: {"127.0.0.1": 10001}
 HealthCheckEndpoints: {"127.0.0.1": 8911}
 Model: 
-  Hosts: {"model": 5001}
+  Hosts: {"localhost": 5001}
   MaxConnections: 200000
   MaxPendingRequests: 1000
   MaxRequests: 10240

@@ -4,6 +4,7 @@ services:
   xds:
     image: vmagentacr.azurecr.io/mdc/xds:latest 
     command: /xds /conf/xds_conf.yaml
+    network_mode: "host"
     expose:
       - "12345"
     volumes:
@@ -11,11 +12,7 @@ services:
   envoy:
     image: envoyproxy/envoy:v1.16.1
     command: bash /app/start.sh 2
-    links:
-      - xds
-    ports:
-      - 10001:10001
-      - 9902:9902
+    network_mode: "host"
     environment:
     - MIR_MESH_DISABLE=false 
     - MIR_ENVOY_RETRY_ATTEMPTS=10 
@@ -33,10 +30,32 @@ services:
     - MIR_SCORING_PROXY_IDLE_TIMEOUT=60
     volumes:
       - ./envoy:/app
+  envoy_wo_mdc:
+    image: envoyproxy/envoy:v1.16.1
+    command: bash /app/start.sh 2
+    network_mode: "host"
+    environment:
+    - MIR_MESH_DISABLE=false 
+    - MIR_ENVOY_RETRY_ATTEMPTS=10 
+    - MIR_SCORING_PROXY_MAX_CONNECTION_DURATION=240 
+    - ENABLE_TRITON_MULTI_MODEL=false 
+    - ENVOY_MESH_LOAD_BALANCE_ALGO=ROUND_ROBIN 
+    - HOST_IP=xds 
+    - MIR_MODEL_USE_HTTP2=false 
+    - MIR_ENVOY_HIGH_QPS_OPTIMIZED=true 
+    - MIR_ENABLE_MESH_HTTP2=false 
+    - MODEL_REQUEST_TIMEOUT=600 
+    - ENABLE_MDC=false 
+    - MIR_MTLS_DISABLE=false 
+    - MIR_ENVOY_LOG_LEVEL=warn 
+    - MIR_SCORING_PROXY_IDLE_TIMEOUT=60
+    volumes:
+      - ./envoy_wo_mdc:/app
   mdc:
     image: vmagentacr.azurecr.io/public/mir/mir-mdc:55585752.1643013235733
     entrypoint: ./app/mdc-server
     command: -config /conf/config.json -http :50011
+    network_mode: "host"
     volumes:
       - ./mdc:/conf
     environment:
@@ -45,8 +64,7 @@ services:
       - blobName=${blobName}
   model:
     image: syntest:latest
+    network_mode: "host"
     environment:
         - HTTP_PORT=5001
-    ports:
-        - "5001:5001"
     

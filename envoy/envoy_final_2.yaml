@@ -148,7 +148,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: xds
+                address: localhost
                 port_value: 12345
 
   - name: mdc-cluster
@@ -165,5 +165,5 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: mdc
+                address: localhost
                 port_value: 50011

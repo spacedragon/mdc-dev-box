@@ -52,8 +52,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	findContainers()
-	sampleContainerCpu()
+	// findContainers()
+	// sampleContainerCpu()
 
 	log.Debug("begin %v", begin)
 	now := time.Now()
@@ -128,7 +128,31 @@ func trimQuotes(s string) string {
 }
 
 func send(req *requestData) {
-	u, _ := url.Parse("http://localhost:10001/")
+	_ = doSend("http://localhost:5001", req)
+	raw := doSend("http://localhost:5001", req)
+	envoyDuration := doSend("http://localhost:10002", req)
+	duration := doSend("http://localhost:10001", req)
+
+	// sampleContainerCpu()
+	log.WithFields(log.Fields{
+		"method":         "Post",
+		"statusCode":     200,
+		"url":            "",
+		"rawDuration":    raw,
+		"envoyDuration":  envoyDuration,
+		"duration":       duration,
+		"serverDuration": req.Time,
+		"sent":           req.Sent,
+		"recv":           req.Recv,
+		"mdcCpu":         mdcCpu,
+		"envoyCpu":       envoyCpu,
+		"modelCpu":       modelCpu,
+	}).Info("Sent request ", req.RequestId)
+
+}
+
+func doSend(target string, req *requestData) int64 {
+	u, _ := url.Parse(target)
 	q := u.Query()
 	q.Set("time", strconv.Itoa(req.Time))
 	q.Set("size", strconv.Itoa(req.Sent))
@@ -150,20 +174,8 @@ func send(req *requestData) {
 	if err != nil {
 		panic(err)
 	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	elapsed := time.Since(begin).Milliseconds()
-	sampleContainerCpu()
-	log.WithFields(log.Fields{
-		"method":         "Post",
-		"statusCode":     resp.StatusCode,
-		"url":            u.String(),
-		"duration":       elapsed,
-		"serverDuration": req.Time,
-		"sent":           len(b),
-		"recv":           len(body),
-		"mdcCpu":         mdcCpu,
-		"envoyCpu":       envoyCpu,
-		"modelCpu":       modelCpu,
-	}).Info("Sent request ", req.RequestId)
+	ioutil.ReadAll(resp.Body)
 	defer resp.Body.Close()
+	elapsed := time.Since(begin).Microseconds()
+	return elapsed
 }

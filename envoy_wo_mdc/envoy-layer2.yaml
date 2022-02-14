@@ -1,7 +1,7 @@
 admin:
   access_log_path: /dev/stdout
   address:
-    socket_address: { address: 0.0.0.0, port_value: 9902 }
+    socket_address: { address: 0.0.0.0, port_value: 9903 }
 
 node:
   id: "node_02"
@@ -33,7 +33,7 @@ static_resources:
       socket_address:
         protocol: TCP
         address: 0.0.0.0
-        port_value: 10001
+        port_value: 10002
     filter_chains:
     - filters:
       - name: envoy.http_connection_manager
@@ -151,19 +151,3 @@ static_resources:
                 address: localhost
                 port_value: 12345
 
-  - name: mdc-cluster
-    connect_timeout: 2.00s
-    type: logical_dns
-    lb_policy: ROUND_ROBIN
-    http_protocol_options: {}
-    upstream_connection_options:
-      tcp_keepalive: {}
-    load_assignment:
-      cluster_name: mdc-cluster
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: localhost
-                port_value: 50011
