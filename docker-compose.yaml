@@ -54,7 +54,7 @@ services:
   mdc:
     image: vmagentacr.azurecr.io/public/mir/mir-mdc:latest
     entrypoint: ./app/mdc-server
-    command: -config /conf/config.json -http :50011
+    command: -config /conf/config.json -http :50011 -log-level debug
     network_mode: "host"
     volumes:
       - ./mdc:/conf

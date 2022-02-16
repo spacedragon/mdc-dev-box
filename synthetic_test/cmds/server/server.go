@@ -11,7 +11,9 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/score", handler)
+
+	http.HandleFunc("/ready", func(rw http.ResponseWriter, r *http.Request) { rw.WriteHeader(200) })
 
 	opt := &sse.Options{
 		Headers: map[string]string{
@@ -29,7 +31,11 @@ func main() {
 	go func() {
 		for {
 			eventType := "ping"
-			s.SendMessage("/events", sse.NewMessage(strconv.Itoa(id), "ping", eventType))
+			data := make([]byte, 1024)
+			for i := 0; i < 1024; i++ {
+				data[i] = 'o'
+			}
+			s.SendMessage("/events", sse.NewMessage(strconv.Itoa(id), string(data), eventType))
 			id++
 			time.Sleep(100 * time.Millisecond)
 		}

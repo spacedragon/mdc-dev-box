@@ -4,8 +4,5 @@
   "captureResponse": true,
   "captureHeaders": [],
   "sampleRatePercentage": 100,
-  "maxPayloadSize": 1.0,
-  "eventHubSink": {
-    "connectionString": "${eventhubConnStr}"
-  }
+  "maxPayloadSize": 1.0
 }

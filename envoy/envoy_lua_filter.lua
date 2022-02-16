@@ -101,34 +101,34 @@ function sample(sampleRate)
 end
 
 -- MDC Settings
-local maxPayloadSize = (tonumber(os.getenv("MDC_MAX_PAYLOAD_SIZE")) or 2.0) * 1024 * 1024  -- convert to size in bytes
+local maxPayloadSize = (tonumber(os.getenv("MDC_MAX_PAYLOAD_SIZE")) or 1.0) * 1024 * 1024  -- convert to size in bytes
 local maxSampleRate = (tonumber(os.getenv("MDC_SAMPLE_RATE")) or 100.0) / 100
 
 local uuid = require "app.uuid"
 
 function mdcSendAsync(handle, isReq)
-    local traceId
     if isReq then
         local sampleResult = sample(maxSampleRate)
         handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "mdc.sample", sampleResult)
         if not sampleResult then
             do return end
         end
-
-        traceId = uuid.generate()
-        handle:streamInfo():dynamicMetadata():set("envoy.filters.http.lua", "mdc.traceId", traceId)
     else
         local sampleResult = handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["mdc.sample"]
         if not sampleResult then
             do return end
         end
-
-        traceId =  handle:streamInfo():dynamicMetadata():get("envoy.filters.http.lua")["mdc.traceId"]
     end
 
     local headers = {}
+    local traceId = uuid.generate()
+    
+    headers["trace-id"] = traceId
     headers["ce-time"] = tostring(os.time(os.date("!*t")))
-    headers["ce-trace-id"] = traceId
+    mdcCluster = "mdc-cluster"
+    headers[":authority"] = mdcCluster
+    headers[":method"] = "POST"
+    headers[":path"] = isReq and "/modeldata/input" or "/modeldata/output"
 
     for k, v in pairs(handle:headers()) do
         -- filter pseudo-headers and transfer format headers
@@ -141,27 +141,21 @@ function mdcSendAsync(handle, isReq)
         end
     end
 
-    local bodyChunks = {}
-    local contentLength = 0
+    local seq = 0
+
     for chunk in handle:bodyChunks() do
         local len = chunk:length()
-        contentLength = contentLength + len
+        local body = chunk:getBytes(0, len)
+        headers["seq"] = tostring(seq)
 
-        if contentLength > maxPayloadSize then
-            handle:logDebug("Max payload size exceed, the payload dropped by MDC." )
-            do return end
-        end
+        handle:logDebug("sending chunk to mdc #"..tostring(seq).." size:".. tostring(chunk:length()))
+        handle:httpCall(mdcCluster, headers, body, 5000, true)
+        seq = seq + 1
+    end    
 
-        if len > 0 then
-            table.insert(bodyChunks, chunk:getBytes(0, len))
-        end
+    if seq == 0  then
+        -- No body for this payload
+        handle:httpCall(mdcCluster, headers, nil, 5000, true)
     end
-
-    local body = table.concat(bodyChunks, "")
-    local mdcCluster = "mdc-cluster"
-    headers[":authority"] = mdcCluster
-    headers[":method"] = "POST"
-    headers[":path"] = isReq and "/modeldata/input" or "/modeldata/output"
-    handle:httpCall(mdcCluster, headers, body, 5000, true)
 end
 
