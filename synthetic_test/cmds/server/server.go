@@ -6,10 +6,35 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	sse "github.com/alexandrevicenzi/go-sse"
 )
 
 func main() {
 	http.HandleFunc("/", handler)
+
+	opt := &sse.Options{
+		Headers: map[string]string{
+			"Access-Control-Allow-Origin":      "https://localhost:5001",
+			"Access-Control-Allow-Credentials": "true",
+			"Access-Control-Allow-Methods":     "GET, OPTIONS",
+			"Access-Control-Allow-Headers":     "Keep-Alive,X-Requested-With,Cache-Control,Content-Type,Last-Event-ID",
+		},
+	}
+	s := sse.NewServer(opt)
+	http.Handle("/events", s)
+	defer s.Shutdown()
+
+	id := 1
+	go func() {
+		for {
+			eventType := "ping"
+			s.SendMessage("/events", sse.NewMessage(strconv.Itoa(id), "ping", eventType))
+			id++
+			time.Sleep(100 * time.Millisecond)
+		}
+	}()
+
 	fmt.Println("Server started at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", nil))
 }

@@ -52,7 +52,7 @@ services:
     volumes:
       - ./envoy_wo_mdc:/app
   mdc:
-    image: vmagentacr.azurecr.io/public/mir/mir-mdc:55585752.1643013235733
+    image: vmagentacr.azurecr.io/public/mir/mir-mdc:latest
     entrypoint: ./app/mdc-server
     command: -config /conf/config.json -http :50011
     network_mode: "host"

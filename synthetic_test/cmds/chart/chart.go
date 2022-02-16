@@ -52,7 +52,7 @@ func loadFile(file string) []Data {
 }
 
 func main() {
-	mdcData := loadFile("./result_discard.log")
+	mdcData := loadFile("./result.log")
 
 	xValues := make([]time.Time, 0)
 	mdc_durations := make([]float64, 0)
